@@ -9,5 +9,5 @@
   "vod_max_age_days": 6,
   "min_clip_views": 1,
   "min_duration": 8,
-  "privacy": "public"
+  "privacy": "private"
 }
