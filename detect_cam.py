@@ -127,8 +127,9 @@ def detect(video, start=0.0, end=None, fixed_box=None):
                   if bx <= f[1] + f[3] / 2 <= bx + bw_ and by <= f[2] + f[4] / 2 <= by + bh_]
         face_in = stable_face(inside, len(imgs), w)
         if face_in is not None:
+            # Spielbild = alles links der Kamera (Kamera + Chat sitzen rechts)
             return {"mode": "cam", "reason": "feste Facecam", "box": [bx, by, bw_, bh_],
-                    "face": [float(v) for v in face_in]}
+                    "face": [float(v) for v in face_in], "game_crop": [0, 0, bx, h]}
     face = stable_face(found, len(imgs), w)
     if face is None:
         return {"mode": "full", "reason": "kein stabiles Gesicht"}

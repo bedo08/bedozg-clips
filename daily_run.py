@@ -205,8 +205,15 @@ def layout_filter(src_w, src_h, cam):
     """Identisch mit Deutschestreamerclips (von Boss abgenommen): Facecam oben,
     ganzes Spielbild darunter, Hintergrund unscharf. Gibt (filter, untertitel_y)."""
     game_h = 608
+    game_src = ""
+    if cam.get("game_crop"):
+        # BedoZg (Boss, 20.11.): unten nur das reine Spiel links der Kamera,
+        # ohne doppelte Kamera und Chat. Volle Hoehe, dadurch groesser.
+        gx, gy, gw, gh = cam["game_crop"]
+        game_h = min(900, int(W * gh / gw) // 2 * 2)
+        game_src = f"crop={gw}:{gh}:{gx}:{gy},"
     bg = (f"[a]scale=-2:{H},crop={W}:{H},boxblur=20:2,eq=brightness=-0.15[bg];"
-          f"[c]scale={W}:{game_h}:flags=lanczos[game];")
+          f"[c]{game_src}scale={W}:{game_h}:flags=lanczos[game];")
     if cam["mode"] == "cam":
         x, y, bw, bh = cam["box"]
         cam_h = min(760, int(W * bh / bw) // 2 * 2)
