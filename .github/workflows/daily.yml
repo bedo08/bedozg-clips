@@ -65,7 +65,8 @@ jobs:
           TIKTOK_KEY: ${{ secrets.TIKTOK_KEY }}
         run: |
           printf '%s' "$TIKTOK_CLIENT" > tiktok_client.json
-          printf '%s' "$TIKTOK_KEY" > tiktok_key.txt
+          # Zeilenenden/Leerzeichen weg: Ein Windows-\r im Passwort brach am 19.11. das Entschluesseln
+          printf '%s' "$TIKTOK_KEY" | tr -d '\r\n ' > tiktok_key.txt
           # Schlaegt das Entschluesseln fehl, Datei loeschen: sonst wuerde unten
           # Muell verschluesselt und der gute Token im Repo ueberschrieben.
           openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 -in tiktok_token.enc -out tiktok_token.json -pass file:tiktok_key.txt \
