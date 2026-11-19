@@ -315,7 +315,7 @@ def main():
         out = WORK / f"{slug}.mp4"
         try:
             download(c, src)
-            cam = detect_cam.detect(src)
+            cam = detect_cam.detect(src, fixed_box=CFG.get("cam_box"))
             print(f"[{i+1}] {c['id']}: Facecam {cam['mode']} {cam.get('box', '')}", flush=True)
             audio = subtitles.load_audio(src)
             words = subtitles.transcribe(model, src, audio)

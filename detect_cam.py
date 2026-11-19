@@ -109,12 +109,26 @@ def find_edge(prof, lo, hi, limit, fallback):
     return fallback
 
 
-def detect(video, start=0.0, end=None):
+def detect(video, start=0.0, end=None, fixed_box=None):
+    """fixed_box [x, y, w, h] bei 1920x1080: feste Facecam des eigenen Kanals.
+    BedoZg (19.11.): Boss' Kamera ist ein breites Wohnzimmerbild ohne Rahmen
+    (rechts, 606x340). Die Kantensuche fand nur einen Fleck um das Gesicht
+    (104x146) und blies ihn auf. Liegt ein stabiles Gesicht in der festen Box,
+    wird genau diese Box genommen; sonst (z. B. reine Kamera-Szene) wie bisher."""
     w, h, dur = probe(video)
     imgs = frames(video, w, h, dur, start, end)
     if len(imgs) < 3:
         return {"mode": "full", "reason": "zu wenige Bilder"}
     found = faces(imgs, w, h)
+    if fixed_box:
+        s = w / 1920
+        bx, by, bw_, bh_ = [int(v * s) // 2 * 2 for v in fixed_box]
+        inside = [f for f in found
+                  if bx <= f[1] + f[3] / 2 <= bx + bw_ and by <= f[2] + f[4] / 2 <= by + bh_]
+        face_in = stable_face(inside, len(imgs), w)
+        if face_in is not None:
+            return {"mode": "cam", "reason": "feste Facecam", "box": [bx, by, bw_, bh_],
+                    "face": [float(v) for v in face_in]}
     face = stable_face(found, len(imgs), w)
     if face is None:
         return {"mode": "full", "reason": "kein stabiles Gesicht"}

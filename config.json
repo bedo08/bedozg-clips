@@ -9,5 +9,12 @@
   "vod_max_age_days": 6,
   "min_clip_views": 1,
   "min_duration": 8,
-  "privacy": "private"
+  "privacy": "private",
+  "cam_box": [
+    1314,
+    364,
+    606,
+    340
+  ],
+  "_cam_box": "Feste Facecam von Boss bei 1920x1080 (rechts, Wohnzimmer), vermessen 19./20.11. an Teil 3 des GTA-Streams"
 }
