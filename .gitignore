@@ -4,3 +4,6 @@ token.json
 work/
 __pycache__/
 *.log
+tiktok_client.json
+tiktok_token.json
+tiktok_key.txt

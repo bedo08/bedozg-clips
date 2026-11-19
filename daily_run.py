@@ -318,6 +318,7 @@ def main():
             save(POSTED, posted)
             ok += 1
             print(f"    hochgeladen: https://youtube.com/shorts/{vid}", flush=True)
+            send_tiktok(out, posted, yt_title)
             src.unlink(missing_ok=True)
             out.unlink(missing_ok=True)
         except Exception as e:
@@ -329,6 +330,24 @@ def main():
         gh_notice(f"{ok} von {len(clips)} Shorts hochgeladen")
         if ok == 0:
             sys.exit(1)
+
+
+def send_tiktok(out, posted, yt_title):
+    """Zusaetzlich als Entwurf ins TikTok-Postfach von Boss (Boss, 19.11.: Weg A).
+    Ohne Audit darf die App nicht direkt oeffentlich posten; Boss tippt den
+    Titel in der App und postet selbst. Ein TikTok-Fehler stoppt YouTube nie."""
+    import tiktok_upload
+    if not tiktok_upload.TOKEN.exists():
+        print("    TikTok: kein tiktok_token.json, uebersprungen", flush=True)
+        return
+    try:
+        posted[-1]["tiktok_publish_id"] = tiktok_upload.upload_draft(out)
+        save(POSTED, posted)
+        print(f"    TikTok-Entwurf gesendet, Titel zum Abtippen: {yt_title}", flush=True)
+        gh_notice(f"TikTok-Entwurf, Titel: {yt_title}")
+    except Exception as e:
+        print(f"    TikTok FEHLER: {e}", flush=True)
+        gh_error(f"TikTok-Entwurf: {type(e).__name__}: {e}")
 
 
 def gh_error(msg):

@@ -55,12 +55,36 @@ jobs:
       - name: YouTube-Schluessel und Kanal pruefen
         run: python -c "import upload; upload.assert_channel(upload.client())"
 
+      # TikTok (seit 19.11.): App-Schluessel aus Secret, Token liegt verschluesselt
+      # im Repo (tiktok_token.enc), weil TikTok ihn bei jedem Erneuern austauschen
+      # kann und ein Secret sich aus dem Lauf heraus nicht aktualisieren laesst.
+      - name: TikTok-Zugangsdaten wiederherstellen und pruefen
+        continue-on-error: true
+        env:
+          TIKTOK_CLIENT: ${{ secrets.TIKTOK_CLIENT }}
+          TIKTOK_KEY: ${{ secrets.TIKTOK_KEY }}
+        run: |
+          printf '%s' "$TIKTOK_CLIENT" > tiktok_client.json
+          printf '%s' "$TIKTOK_KEY" > tiktok_key.txt
+          # Schlaegt das Entschluesseln fehl, Datei loeschen: sonst wuerde unten
+          # Muell verschluesselt und der gute Token im Repo ueberschrieben.
+          openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 -in tiktok_token.enc -out tiktok_token.json -pass file:tiktok_key.txt \
+            || { rm -f tiktok_token.json; echo "::error::TikTok-Token nicht entschluesselbar, Secret TIKTOK_KEY pruefen"; exit 1; }
+          python tiktok_upload.py --whoami
+
       - name: VODs pruefen, Highlights schneiden, hochladen
         run: python daily_run.py
 
+      - name: TikTok-Token wieder verschluesseln
+        if: always()
+        run: |
+          if [ -f tiktok_token.json ] && [ -s tiktok_key.txt ]; then
+            openssl enc -aes-256-cbc -pbkdf2 -iter 200000 -salt -in tiktok_token.json -out tiktok_token.enc -pass file:tiktok_key.txt
+          fi
+
       - name: Geheimnisse wieder entfernen
         if: always()
-        run: rm -f client_secret.json token.json
+        run: rm -f client_secret.json token.json tiktok_client.json tiktok_token.json tiktok_key.txt
 
       - name: posted.json und vods.json zurueck ins Repo
         if: always()
@@ -71,5 +95,6 @@ jobs:
           # bricht ein gemeinsames "git add" ab und posted.json geht verloren.
           if [ -f posted.json ]; then git add posted.json; fi
           if [ -f vods.json ]; then git add vods.json; fi
+          if [ -f tiktok_token.enc ]; then git add tiktok_token.enc; fi
           git diff --cached --quiet || git commit -m "Taeglicher Lauf: posted.json/vods.json aktualisiert"
           git pull --rebase -q && git push
