@@ -142,6 +142,15 @@ def analyze_vod(vod, test_minutes=None):
             "analyzed": datetime.now(timezone.utc).isoformat(timespec="seconds"), "segments": segs}
 
 
+def is_live(login):
+    """True, wenn der Kanal gerade sendet. Bei Fehler/offline False."""
+    out = subprocess.run(YTDLP + ["--skip-download", "--print", "%(is_live)s",
+                                  f"https://www.twitch.tv/{login}"],
+                         capture_output=True, text=True, encoding="utf-8", errors="replace",
+                         env=ENV).stdout or ""
+    return out.strip().splitlines()[-1:] == ["True"]
+
+
 def refresh_vods(login, state, test_minutes=None):
     """Neue VODs analysieren, verschwundene (von Twitch geloescht) entfernen."""
     live = list_vods(login)
@@ -151,6 +160,12 @@ def refresh_vods(login, state, test_minutes=None):
     for gone in [k for k in state if k not in ids]:
         print(f"  VOD {gone} gibt es nicht mehr, entfernt", flush=True)
         del state[gone]
+    # Laeuft der Stream noch, ist das neueste VOD unfertig. Einmal analysiert
+    # gilt es als erledigt, der Rest des Streams waere verloren (19.11. gefunden,
+    # Boss' 12-h-Stream lief zum Wecker 18:45 noch). Also erst nach Stream-Ende.
+    if live and not test_minutes and is_live(login) and live[0]["id"] not in state:
+        print(f"  {login} ist live, VOD {live[0]['id']} wartet bis nach dem Stream", flush=True)
+        live = live[1:]
     for vod in live:
         if vod["id"] in state:
             continue
