@@ -49,6 +49,12 @@ jobs:
           printf '%s' "$YT_CLIENT_SECRET" > client_secret.json
           printf '%s' "$YT_TOKEN" > token.json
 
+      # Schluessel bei jedem Lauf pruefen, auch wenn es nichts hochzuladen gibt.
+      # Sonst faellt ein abgelaufener Token erst beim ersten Upload auf
+      # (Lehre Auto-Shorts, 13.-16.11.2026: tagelang still 0 Uploads).
+      - name: YouTube-Schluessel und Kanal pruefen
+        run: python -c "import upload; upload.assert_channel(upload.client())"
+
       - name: VODs pruefen, Highlights schneiden, hochladen
         run: python daily_run.py
 
