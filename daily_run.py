@@ -156,7 +156,8 @@ def refresh_vods(login, state, test_minutes=None):
             continue
         try:
             state[vod["id"]] = analyze_vod(vod, test_minutes)
-            save(VODS, state)
+            if login == CFG["twitch_login"]:  # Testlaeufe mit fremdem Kanal nie speichern
+                save(VODS, state)
         except Exception as e:
             print(f"  VOD {vod['id']} nicht analysierbar: {e}", flush=True)
             gh_error(f"VOD {vod['id']} Analyse: {type(e).__name__}: {e}")
@@ -265,7 +266,12 @@ def main():
     state = refresh_vods(login, vods_file_state, test_minutes)
     if login == CFG["twitch_login"]:
         save(VODS, state)
-    clips = pick(login, posted, state, want)
+    clips = pick(login, posted, state, want if "--only-vods" not in sys.argv else 99)
+    if "--only-vods" in sys.argv:
+        # Test: nur VOD-Highlights schneiden (sonst gewinnen echte Clips immer)
+        if not dry:
+            raise SystemExit("--only-vods nur zusammen mit --dry-run")
+        clips = [c for c in clips if c["kind"] == "vod"][:want]
     print(f"{len(clips)} ausgewaehlt:", flush=True)
     for c in clips:
         where = f"{c['start']:.0f}s" if c["kind"] == "vod" else f"{c['views']} Aufrufe"

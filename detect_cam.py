@@ -148,7 +148,15 @@ def detect(video, start=0.0, end=None):
     if cy - 1.8 * fh <= 0:
         top = 0 if top == max(0, cy - 1.8 * fh) else top
     bw, bh = right - left, bottom - top
-    box = [int(left) // 2 * 2, int(top) // 2 * 2, int(bw) // 2 * 2, int(bh) // 2 * 2]
+    # Eingeblendete Facecams sind klein. Ein "Rahmen" ueber fast die halbe
+    # Bildbreite/-hoehe ist in Wahrheit die ganze Kameraszene (Fall xrohat
+    # Raum-Clip, 2026-11-18: Box 1144x540 zeigte oben denselben Raum doppelt).
+    if bw > 0.45 * w or bh > 0.45 * h:
+        xs = [f[1] for f in found] + [f[1] + f[3] for f in found]
+        span = [max(0.0, min(xs) - fw), min(float(w), max(xs) + fw)]
+        return {"mode": "full", "reason": "Rahmen zu gross, Kameraszene",
+                "face": [fx, fy, fw, fh], "span": span}
+    box =[int(left) // 2 * 2, int(top) // 2 * 2, int(bw) // 2 * 2, int(bh) // 2 * 2]
     return {"mode": "cam", "box": box, "face": [fx, fy, fw, fh]}
 
 
