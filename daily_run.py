@@ -281,6 +281,12 @@ def main():
             raise SystemExit("--login nur zusammen mit --dry-run (Test mit fremdem Kanal)")
         login = sys.argv[sys.argv.index("--login") + 1]
     name = CFG["display_name"]
+    # Pause (Boss, 20.11.): Boss sucht Clips selbst aus. Lauf bleibt gruen,
+    # Schluessel-Pruefungen laufen weiter, aber nichts wird geschnitten/hochgeladen.
+    if CFG.get("paused") and not dry:
+        print("PAUSIERT (config.json paused=true), nichts hochgeladen.")
+        gh_notice("BedoZg pausiert: nichts hochgeladen (config.json paused)")
+        return
     WORK.mkdir(exist_ok=True)
     posted = load(POSTED, [])
     vods_file_state = load(VODS, {}) if login == CFG["twitch_login"] else {}

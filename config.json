@@ -16,5 +16,7 @@
     606,
     340
   ],
-  "_cam_box": "Feste Facecam von Boss bei 1920x1080 (rechts, Wohnzimmer), vermessen 19./20.11. an Teil 3 des GTA-Streams"
+  "_cam_box": "Feste Facecam von Boss bei 1920x1080 (rechts, Wohnzimmer), vermessen 19./20.11. an Teil 3 des GTA-Streams",
+  "paused": true,
+  "_paused": "Boss 20.11.: Automatik pausiert, Boss sucht Clips selbst aus. Fortsetzen nur auf Boss-Ansage (paused=false)."
 }
