@@ -83,9 +83,18 @@ def list_clips(login):
 
 
 def list_vods(login):
-    """Gespeicherte Streams, neueste zuerst. 'id' ist bei Twitch-VODs 'v123...'."""
-    return ytdlp_list(f"https://www.twitch.tv/{login}/videos?filter=archives&sort=time",
+    """Highlights zuerst, dann gespeicherte Streams (neueste zuerst). 'id' ist 'v123...'.
+    Highlights (Boss, 20.11.): von Boss selbst vorsortiert, Twitch loescht sie nicht
+    nach 7 Tagen. Vorher wurden sie komplett uebersehen (nur filter=archives)."""
+    hl = ytdlp_list(f"https://www.twitch.tv/{login}/videos?filter=highlights&sort=time",
+                    ["url", "id", "title"], end=10)
+    for v in hl:
+        v["highlight"] = True
+        # Sonst landet "Highlight: ..." als Ersatztitel im Short (Probelauf 20.11.)
+        v["title"] = v["title"].removeprefix("Highlight:").strip()
+    arch = ytdlp_list(f"https://www.twitch.tv/{login}/videos?filter=archives&sort=time",
                       ["url", "id", "title"], end=10)
+    return hl + arch
 
 
 def window_features(audio_file):
@@ -163,14 +172,16 @@ def refresh_vods(login, state, test_minutes=None):
     # Laeuft der Stream noch, ist das neueste VOD unfertig. Einmal analysiert
     # gilt es als erledigt, der Rest des Streams waere verloren (19.11. gefunden,
     # Boss' 12-h-Stream lief zum Wecker 18:45 noch). Also erst nach Stream-Ende.
-    if live and not test_minutes and is_live(login) and live[0]["id"] not in state:
-        print(f"  {login} ist live, VOD {live[0]['id']} wartet bis nach dem Stream", flush=True)
-        live = live[1:]
+    newest = next((v for v in live if not v.get("highlight")), None)
+    if newest and not test_minutes and newest["id"] not in state and is_live(login):
+        print(f"  {login} ist live, VOD {newest['id']} wartet bis nach dem Stream", flush=True)
+        live = [v for v in live if v is not newest]
     for vod in live:
         if vod["id"] in state:
             continue
         try:
             state[vod["id"]] = analyze_vod(vod, test_minutes)
+            state[vod["id"]]["highlight"] = bool(vod.get("highlight"))
             if login == CFG["twitch_login"]:  # Testlaeufe mit fremdem Kanal nie speichern
                 save(VODS, state)
         except Exception as e:
@@ -186,9 +197,12 @@ def pick(login, posted, state, want):
         for s in v["segments"]:
             sid = f"vod:{vid}:{int(s['start'])}"
             if sid not in done:
+                # Highlight-Stellen vor normalen Stream-Stellen (+1000), Clips bleiben vorn
+                bonus = 1000 if v.get("highlight") else 0
                 pool.append({"id": sid, "kind": "vod", "url": v["url"], "title": v["title"],
-                             "start": s["start"], "end": s["end"], "score": s["score"], "views": 0})
-    # echte Clips (score 1e9) zuerst, dann die spannendsten VOD-Stellen
+                             "start": s["start"], "end": s["end"], "score": s["score"] + bonus,
+                             "views": 0})
+    # echte Clips (score 1e9) zuerst, dann Highlights, dann die spannendsten VOD-Stellen
     pool.sort(key=lambda c: (-c["score"], -c["views"]))
     return pool[:want]
 
